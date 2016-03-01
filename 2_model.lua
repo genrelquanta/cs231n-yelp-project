@@ -22,9 +22,8 @@ num_classes = 10
 
 ----------------------------------------------------------------------
 
-
--- specify the feature extraction model to be loaded.
--- This script currently loads VGG-16
+-- We load the feature extractor net here. Specify the feature extraction 
+-- model to be loaded. This script currently loads VGG-16
 
 prototxt = 'VGG_ILSVRC_16_layers_deploy.prototxt'   -- specify the prototxt path
 binary = 'VGG_ILSVRC_16_layers.caffemodel'  -- specify the binary path
@@ -33,24 +32,23 @@ binary = 'VGG_ILSVRC_16_layers.caffemodel'  -- specify the binary path
 -- this will load the network and print it's structure
 caffe_net = loadcaffe.load(prototxt, binary)
 
--- remove the fully connected layers from the VGG net
+----------------------------------------------------------------------
 
-local num_remove = 8    -- number of layers to be removed from the top
+-- We split the caffe network into feature extractor and trainable part here
+
+feat_train_pipe = nn.Sequential() -- the trainable feature pipe
+
+-- remove the fully connected layers from the feature extractor net
+
+local num_remove = 8 -- number of layers to be removed from the top
 
 for i=1,num_remove do
     caffe_net:remove()
 end
 
-----------------------------------------------------------------------
-
--- we extract/define the trainable part of the caffe network here
-
-model = nn.Sequential() -- container for the entire trainable architecture
-feat_train_pipe = nn.Sequential() -- the trainable feature pipe
-
--- extract the top layers which need to be trained
--- index of the first and last layers from the top
--- which need to be inserted into the trainable net
+-- extract the top layers which need to be trained. Specify index of 
+-- the first and last layers from the top which need to be inserted 
+-- into the trainable net
 
 local idx_start = 25
 local idx_end = 32
@@ -65,10 +63,10 @@ for i=1,num_feat_layers do
 end
 
 ----------------------------------------------------------------------
+
 -- Replicate the caffe_net to generate a feature extractor
 
 local num_feat_layers = 24 -- Number of layers in the feature extractor
-
 
 feature_net = nn.Parallel(1,1) -- container for the feature extractor
 
@@ -84,6 +82,8 @@ end
 ----------------------------------------------------------------------
 
 -- add layers to the trainable model
+
+model = nn.Sequential() -- container for the entire trainable architecture
 
 -- stage 1 : input -> trainable extractor
 feat_train_net = nn.Parallel(1,1)
