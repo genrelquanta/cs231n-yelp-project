@@ -65,10 +65,10 @@ for i=1,num_feat_layers do
 end
 
 ----------------------------------------------------------------------
+-- Replicate the caffe_net to generate a feature extractor
 
 local num_feat_layers = 24 -- Number of layers in the feature extractor
 
--- Replicate the caffe_net to generate a feature extractor
 
 feature_net = nn.Parallel(1,1) -- container for the feature extractor
 
