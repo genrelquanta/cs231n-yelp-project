@@ -85,7 +85,7 @@ print '==> defining training procedure'
 function train()
 
    -- loss tracker
-   local loss = 0
+   trainLoss = 0
 
    -- epoch tracker
    epoch = epoch or 1
@@ -149,7 +149,7 @@ function train()
                        -- normalize gradients and f(X)
                        gradParameters:div(#inputs)
                        f = f/#inputs
-                       loss = f
+                       trainLoss = f
 
                        -- return f and df/dX
                        return f,gradParameters
@@ -165,7 +165,7 @@ function train()
    print("\n==> time to learn 1 sample = " .. (time*1000) .. 'ms')
 
    -- update logger/plot
-   trainLogger:add{['% Train Loss'] = loss}
+   trainLogger:add{['% Train Loss'] = trainLoss}
    if opt.plot then
       trainLogger:style{['% Train Loss'] = '-'}
       trainLogger:plot()
