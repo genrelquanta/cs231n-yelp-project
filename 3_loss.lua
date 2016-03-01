@@ -24,9 +24,6 @@ cmd:option('-loss', 'softmax', 'type of loss function to minimize: softmax | mar
 cmd:text()
 opt = cmd:parse(arg or {})
 
--- Number of classes
-local num_classes = 10
-
 ----------------------------------------------------------------------
 print '==> define loss'
 
