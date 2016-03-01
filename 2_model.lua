@@ -15,10 +15,9 @@ require 'optim'
 ----------------------------------------------------------------------
 
 -- parameters
-nstates = {16,256,128}
 bagsize = 10
 hidden_dim = 256 -- hidden dimension of the fully connected layer
-num_classes = 10
+num_classes = 10 -- number of labels
 
 ----------------------------------------------------------------------
 
