@@ -128,14 +128,16 @@ function train()
 
    biz_to_targets = torch.load('biz_to_targets.dat')
    biz_to_photo_ids = torch.load('biz_to_photo_ids.dat')
+   biz_ids = torch.load('biz_ids.dat')
+   print(biz_ids)
    --print(#biz_to_photo_ids['342'])
 
    for t = 1,numTrain do
 
       -- create mini batch
       local inputs = torch.Tensor(batchSize,3,imgSize,imgSize)
-      local targets = biz_to_targets[tostring(shuffle[t])]
-      local photo_ids = biz_to_photo_ids[tostring(shuffle[t])]
+      local targets = biz_to_targets[biz_ids[shuffle[t]]]
+      local photo_ids = biz_to_photo_ids[biz_ids[shuffle[t]]]
       print('Chutiya bana rahe hain')
       print(shuffle[t])
       print(photo_ids:size(1))
