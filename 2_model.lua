@@ -13,10 +13,12 @@ require 'loadcaffe'
 ----------------------------------------------------------------------
 
 -- parameters
-local hidden_dim = 256 -- hidden dimension of the fully connected layer
+local hidden_dim = 64 -- hidden dimension of the fully connected layer
 local num_classes = 9
 local num_max_pooling = 5
 local input_size = 224
+
+local model_dir = '/home/raghav/Downloads/Yelp/'
 
 ----------------------------------------------------------------------
 
@@ -28,7 +30,7 @@ prototxt = 'VGG_ILSVRC_16_layers_deploy.prototxt'   -- specify the prototxt path
 binary = 'VGG_ILSVRC_16_layers.caffemodel'  -- specify the binary path
 
 -- this will load the network and print it's structure
-feature_net = loadcaffe.load(prototxt, binary)
+feature_net = loadcaffe.load(model_dir..prototxt, model_dir..binary)
 
 -- remove the fully connected layers from the VGG net
 

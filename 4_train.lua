@@ -26,8 +26,8 @@ opt.weightDecay = 0 -- regularization or weight decay parameter (only in SGD)
 opt.momentum = 0 -- momentum for SGD
 opt.plot = false -- live plot of results, can change to true
 local numTrain = 1600 -- Number of training instances
-local batchSize = 16 -- Bag or batch size
-local fileDir = '~/Stanford/Academics/Courses/Winter2016/CS231N/Project/dataset/train_photos/'
+local batchSize = 8 -- Bag or batch size
+local fileDir = '/home/raghav/Downloads/Yelp/train_photos/'
 local imgSize = 224
 
 ----------------------------------------------------------------------
@@ -81,6 +81,7 @@ function crop_or_resize(input_image_path)
   img = image.load(input_image_path)
   -- Directly scaled image
   scaled_img = image.scale(img, w, h)
+  --[[
   -- Cropped image
   _h = img:size()[2]
   _w = img:size()[3]
@@ -96,6 +97,7 @@ function crop_or_resize(input_image_path)
   if _h > h then crop_h = torch.random(1, _h - h) end
 
   cropped_img = image.resize(img, crop_w, crop_h)
+  ]]--
 
   return scaled_img
 end
@@ -124,14 +126,21 @@ function train()
    print('==> doing epoch on training data:')
    print("==> online epoch # " .. epoch .. ' [batchSize = ' .. opt.batchSize .. ']')
 
+   biz_to_targets = torch.load('biz_to_targets.dat')
+   biz_to_photo_ids = torch.load('biz_to_photo_ids.dat')
+   --print(#biz_to_photo_ids['342'])
+
    for t = 1,numTrain do
 
       -- create mini batch
       local inputs = torch.Tensor(batchSize,3,imgSize,imgSize)
       local targets = biz_to_targets[tostring(shuffle[t])]
       local photo_ids = biz_to_photo_ids[tostring(shuffle[t])]
-      local photo_shuffle = torch.randperm(#photo_ids)
-      local numImgs = math.min(batchSize,#photo_ids)
+      print('Chutiya bana rahe hain')
+      print(shuffle[t])
+      print(photo_ids:size(1))
+      local photo_shuffle = torch.randperm(photo_ids:size(1))
+      local numImgs = math.min(batchSize,photo_ids:size(1))
       for i = 1,numImgs do
          -- load new sample
          local img = crop_or_resize(fileDir..tostring(photo_ids[photo_shuffle[i]])..'.jpg')
@@ -154,22 +163,22 @@ function train()
                        local f = 0
 
                        -- evaluate function for complete mini batch
-                       for i = 1,#inputs do
+                       --for i = 1,#inputs do
                           -- estimate f
-                          local features = feature_net:forward(inputs)
-                          local output = model:forward(features)
-                          local err = criterion:forward(output, targets)
-                          f = f + err
+                      local features = feature_net:forward(inputs)
+                      local output = model:forward(features)
+                      local err = criterion:forward(output, targets)
+                      f = f + err
 
-                          -- estimate df/dW
-                          local df_do = criterion:backward(output, targets)
-                          model:backward(features, df_do)
+                      -- estimate df/dW
+                      local df_do = criterion:backward(output, targets)
+                      model:backward(features, df_do)
 
-                       end
+                       --end
 
                        -- normalize gradients and f(X)
-                       gradParameters:div(#inputs)
-                       f = f/#inputs
+                       -- gradParameters:div(#inputs)
+                       f = f--/#inputs
                        loss = f
 
                        -- return f and df/dX
