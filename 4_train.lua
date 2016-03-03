@@ -8,6 +8,49 @@
 require 'torch'
 require 'xlua'
 require 'optim'
+require 'image'
+
+-- return 224x224 random crop/resize of an image
+function crop_or_resize(input_image_path):
+  h = 224
+  w = 224
+  img = image.load(input_image_path)
+  -- Directly scaled image
+  scaled_img = image.scale(img, w, h)
+  -- Cropped image
+  _h = img:size()[2]
+  _w = img:size()[3]
+
+  if _h < h then
+    _h = h
+  end
+  if _w < w then
+    _w = w
+  end
+
+  img = image.scale(img, _w, _h)
+
+  crop_h = 1
+  crop_w = 1
+  if _w > w then
+    crop_w = torch.random(1, _w - w)
+  end
+  if _h > h then
+    crop_h = torch.random(1, _h - h)
+  end
+
+  cropped_img = image.resize(img, crop_w, crop_h)
+
+  return scaled_img
+end
+
+function get_images_for_business_id(business_id)
+  
+
+
+end
+
+
 
 ----------------------------------------------------------------------
 -- parse command line arguments
