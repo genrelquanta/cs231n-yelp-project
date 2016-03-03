@@ -10,48 +10,6 @@ require 'xlua'
 require 'optim'
 require 'image'
 
--- return 224x224 random crop/resize of an image
-function crop_or_resize(input_image_path):
-  h = 224
-  w = 224
-  img = image.load(input_image_path)
-  -- Directly scaled image
-  scaled_img = image.scale(img, w, h)
-  -- Cropped image
-  _h = img:size()[2]
-  _w = img:size()[3]
-
-  if _h < h then
-    _h = h
-  end
-  if _w < w then
-    _w = w
-  end
-
-  img = image.scale(img, _w, _h)
-
-  crop_h = 1
-  crop_w = 1
-  if _w > w then
-    crop_w = torch.random(1, _w - w)
-  end
-  if _h > h then
-    crop_h = torch.random(1, _h - h)
-  end
-
-  cropped_img = image.resize(img, crop_w, crop_h)
-
-  return scaled_img
-end
-
-function get_images_for_business_id(business_id)
-  
-
-
-end
-
-
-
 ----------------------------------------------------------------------
 -- parameters
 
@@ -68,6 +26,9 @@ opt.weightDecay = 0 -- regularization or weight decay parameter (only in SGD)
 opt.momentum = 0 -- momentum for SGD
 opt.plot = false -- live plot of results, can change to true
 local numTrain = 1600 -- Number of training instances
+local batchSize = 16 -- Bag or batch size
+local fileDir = '~/Stanford/Academics/Courses/Winter2016/CS231N/Project/dataset/train_photos/'
+local imgSize = 224
 
 ----------------------------------------------------------------------
 -- CUDA?
@@ -135,19 +96,20 @@ function train()
    -- do one epoch
    print('==> doing epoch on training data:')
    print("==> online epoch # " .. epoch .. ' [batchSize = ' .. opt.batchSize .. ']')
-   for t = 1,trainData:size(),opt.batchSize do
-      -- disp progress
-      xlua.progress(t, trainData:size())
+
+   for t = 1,numTrain do
 
       -- create mini batch
-      local inputs = {}
-      local targets = {}
-      for i = t,math.min(t+opt.batchSize-1,trainData:size()) do
+      local inputs = torch.Tensor(batchSize,3,imgSize,imgSize)
+      local targets = biz_to_targets[tostring(shuffle[t])]
+      local photo_ids = biz_to_photo_ids[tostring(shuffle[t])]
+      local photo_shuffle = torch.randperm(#photo_ids)
+      local numImgs = math.min(batchSize,#photo_ids)
+      for i = 1,numImgs do
          -- load new sample
-         local input = trainData.data[shuffle[i]]
-         local target = trainData.labels[shuffle[i]]
-         if opt.type == 'double' then input = input:double()
-         elseif opt.type == 'cuda' then input = input:cuda() end
+         local img = image.load(fileDir..tostring(photo_ids[photo_shuffle[i]])..'.jpg')
+         if opt.type == 'double' then input = img:double()
+         elseif opt.type == 'cuda' then input = img:cuda() end
          table.insert(inputs, input)
          table.insert(targets, target)
       end
