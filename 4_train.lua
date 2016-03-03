@@ -75,7 +75,7 @@ end
 
 
 -- return 224x224 random crop/resize of an image
-function crop_or_resize(input_image_path):
+function crop_or_resize(input_image_path)
   h = 224
   w = 224
   img = image.load(input_image_path)
@@ -134,11 +134,10 @@ function train()
       local numImgs = math.min(batchSize,#photo_ids)
       for i = 1,numImgs do
          -- load new sample
-         local img = image.load(fileDir..tostring(photo_ids[photo_shuffle[i]])..'.jpg')
+         local img = crop_or_resize(fileDir..tostring(photo_ids[photo_shuffle[i]])..'.jpg')
          if opt.type == 'double' then input = img:double()
          elseif opt.type == 'cuda' then input = img:cuda() end
-         table.insert(inputs, input)
-         table.insert(targets, target)
+         inputs[{{i,i},{1,3},{1,imgSize},{1,imgSize}}] = img:clone()
       end
 
       -- create closure to evaluate f(X) and df/dX
@@ -157,13 +156,13 @@ function train()
                        -- evaluate function for complete mini batch
                        for i = 1,#inputs do
                           -- estimate f
-                          local features = feature_net:forward(inputs[i])
+                          local features = feature_net:forward(inputs)
                           local output = model:forward(features)
-                          local err = criterion:forward(output, targets[i])
+                          local err = criterion:forward(output, targets)
                           f = f + err
 
                           -- estimate df/dW
-                          local df_do = criterion:backward(output, targets[i])
+                          local df_do = criterion:backward(output, targets)
                           model:backward(features, df_do)
 
                        end
