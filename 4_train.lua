@@ -10,28 +10,22 @@ require 'xlua'
 require 'optim'
 
 ----------------------------------------------------------------------
--- parse command line arguments
-if not opt then
-   print '==> processing options'
-   cmd = torch.CmdLine()
-   cmd:text()
-   cmd:text('MIML Training/Optimization')
-   cmd:text()
-   cmd:text('Options:')
-   cmd:option('-save', 'results', 'subdirectory to save/log experiments in')
-   cmd:option('-visualize', false, 'visualize input data and weights during training')
-   cmd:option('-plot', false, 'live plot')
-   cmd:option('-optimization', 'SGD', 'optimization method: SGD | ADAM')
-   cmd:option('-learningRate', 1e-3, 'learning rate at t=0')
-   cmd:option('-beta1', 1e-3, 'beta1 at t=0 for adam')
-   cmd:option('-beta2', 1e-3, 'beta2 at t=0 for adam')
-   cmd:option('-epsilon', 1e-3, 'epsilon for adam')
-   cmd:option('-batchSize', 1, 'mini-batch size (1 = pure stochastic)')
-   cmd:option('-weightDecay', 0, 'weight decay (SGD only)')
-   cmd:option('-momentum', 0, 'momentum (SGD only)')
-   cmd:text()
-   opt = cmd:parse(arg or {})
-end
+-- parameters
+
+local opt = {}
+opt.type = 'cpu' -- can change to 'cuda'
+opt.save ='train_results' -- name of subdirectory to save the results in
+opt.optimization = 'SGD' -- optimization method, can change to 'ADAM'
+opt.learningRate = 1e-3 -- learning rate
+opt.beta1 = 1e-3 -- beta1 for ADAM
+opt.beta2 = 1e-3 -- beta2 for ADAM
+opt.epsilon = 1e-3 -- epsilon for ADAM
+opt.batchSize = 8 -- equivalent to bag size here
+opt.weightDecay = 0 -- regularization or weight decay parameter (only in SGD)
+opt.momentum = 0 -- momentum for SGD
+opt.plot = false -- live plot of results, can change to true
+local numTrain = 1600 -- Number of training instances
+
 ----------------------------------------------------------------------
 -- CUDA?
 if opt.type == 'cuda' then
@@ -44,7 +38,6 @@ print '==> defining some tools'
 
 -- Log results to files
 trainLogger = optim.Logger(paths.concat(opt.save, 'train.log'))
-testLogger = optim.Logger(paths.concat(opt.save, 'test.log'))
 
 -- Retrieve parameters and gradients:
 -- this extracts and flattens all the trainable parameters of the model
@@ -59,9 +52,9 @@ print '==> configuring optimizer'
 
 if opt.optimization == 'ADAM' then
    optimState = {
-      learningRate = opt.learningRate
-      beta1 = opt.beta1
-      beta2 = opt.beta2
+      learningRate = opt.learningRate,
+      beta1 = opt.beta1,
+      beta2 = opt.beta2,
       epsilon = opt.epsilon
    }
    optimMethod = optim.adam
@@ -74,9 +67,6 @@ elseif opt.optimization == 'SGD' then
       learningRateDecay = 1e-7
    }
    optimMethod = optim.sgd
-
-else
-   error('unknown optimization method')
 end
 
 ----------------------------------------------------------------------
@@ -85,7 +75,7 @@ print '==> defining training procedure'
 function train()
 
    -- loss tracker
-   trainLoss = 0
+   local loss = 0
 
    -- epoch tracker
    epoch = epoch or 1
@@ -97,7 +87,7 @@ function train()
    model:training()
 
    -- shuffle at each epoch
-   shuffle = torch.randperm(trsize)
+   shuffle = torch.randperm(numTrain)
 
    -- do one epoch
    print('==> doing epoch on training data:')
@@ -149,7 +139,7 @@ function train()
                        -- normalize gradients and f(X)
                        gradParameters:div(#inputs)
                        f = f/#inputs
-                       trainLoss = f
+                       loss = f
 
                        -- return f and df/dX
                        return f,gradParameters
@@ -165,7 +155,7 @@ function train()
    print("\n==> time to learn 1 sample = " .. (time*1000) .. 'ms')
 
    -- update logger/plot
-   trainLogger:add{['% Train Loss'] = trainLoss}
+   trainLogger:add{['% Train Loss'] = loss}
    if opt.plot then
       trainLogger:style{['% Train Loss'] = '-'}
       trainLogger:plot()
