@@ -133,14 +133,13 @@ function train()
    --print(#biz_to_photo_ids['342'])
 
    for t = 1,numTrain do
+      print('Iteration number: '..t)
 
       -- create mini batch
       local inputs = torch.Tensor(batchSize,3,imgSize,imgSize)
       local targets = biz_to_targets[biz_ids[shuffle[t]]]
       local photo_ids = biz_to_photo_ids[biz_ids[shuffle[t]]]
-      print('Chutiya bana rahe hain')
-      print(shuffle[t])
-      print(photo_ids:size(1))
+      --print('Selected business number'..photo_ids:size(1))
       local photo_shuffle = torch.randperm(photo_ids:size(1))
       local numImgs = math.min(batchSize,photo_ids:size(1))
       for i = 1,numImgs do
