@@ -12,7 +12,7 @@ require 'image'
 -- parameters
 
 local opt = {}
-plot = 1
+plot = false
 opt.save ='test_results' -- name of subdirectory to save the results in
 numTest = 800 -- Number of test instances
 batchSize = 16 -- Bag or batch size
