@@ -11,12 +11,13 @@ require 'image'
 -- parameters
 
 local type = 'double' -- can change to CUDA
-local numTrain = 800 -- Number of training datapoints
-local numTest = 200 -- Number of test datapoints
+local dataSize = 800 -- Number of datapoints
 local batchSize = 16 -- Bag or batch size
 local photoDir = '/Users/Pulkit/Stanford/Academics/Courses/Winter2016/CS231N/Project/dataset/train_photos/'
-local writeDirTrain= '/Users/Pulkit/Stanford/Academics/Courses/Winter2016/CS231N/Project/dataset/train_features/'
-local writeDirTest = '/Users/Pulkit/Stanford/Academics/Courses/Winter2016/CS231N/Project/dataset/test_features/'
+local writeDirFC7= '/Users/Pulkit/Stanford/Academics/Courses/Winter2016/CS231N/Project/dataset/train_features_fc7/'
+local writeDirCV7= '/Users/Pulkit/Stanford/Academics/Courses/Winter2016/CS231N/Project/dataset/train_features_cv7/'
+local writeDirFC6= '/Users/Pulkit/Stanford/Academics/Courses/Winter2016/CS231N/Project/dataset/train_features_fc6/'
+local writeDirCV14= '/Users/Pulkit/Stanford/Academics/Courses/Winter2016/CS231N/Project/dataset/train_features_cv14/'
 local imgSize = 224
 ----------------------------------------------------------------------
 
@@ -40,111 +41,47 @@ function crop_or_resize(input_image_path)
   img = image.load(input_image_path)
   -- Directly scaled image
   scaled_img = image.scale(img, w, h)
-  --[[
-  -- Cropped image
-  _h = img:size()[2]
-  _w = img:size()[3]
-
-  if _h < h then _h = h end
-  if _w < w then _w = w end
-
-  img = image.scale(img, _w, _h)
-
-  crop_h = 1
-  crop_w = 1
-  if _w > w then crop_w = torch.random(1, _w - w) end
-  if _h > h then crop_h = torch.random(1, _h - h) end
-
-  cropped_img = image.resize(img, crop_w, crop_h)
-  ]]--
-
   return scaled_img
 end
 
 ----------------------------------------------------------------------
 print '==> extracting features'
 
-
-
    -- load train and test data indices
    trainData = torch.load('trainDataIds.dat')
-   testData = torch.load('testDataIds.dat')
+   --testData = torch.load('testDataIds.dat')
+   --valDataBiz = torch.load('valDataIds.dat')
    trainBiz = torch.load('trainBiz.dat')
-   testBiz = torch.load('testBiz.dat')
+   --testBiz = torch.load('testBiz.dat')
+   --valBiz = torch.load('trainBiz.dat')
 
-   for t = 1,numTrain do
+   for t = 1,dataSize do
       print('Iteration number: '..t)
 
       -- create mini batch
-      -- local inputs = torch.Tensor(batchSize,3,imgSize,imgSize)
       local numImgs = trainData[trainBiz[t]]:size(1)
       for i = 1,numImgs do
          -- load new sample
          local time = sys.clock()
-         local img = crop_or_resize(photoDir..tostring(trainData[trainBiz[t]][i])..'.jpg')
-         img[{{1,1},{1,imgSize},{1,imgSize}}]:add(-123.68)
+         img = crop_or_resize(photoDir..tostring(trainData[trainBiz[t]][i])..'.jpg')
+         img = img*255
+         local red = img[{{1,1},{1,imgSize},{1,imgSize}}]:add(-123.68)
          img[{{2,2},{1,imgSize},{1,imgSize}}]:add(-116.779)
-         img[{{3,3},{1,imgSize},{1,imgSize}}]:add(-103.939)
+         local blue = img[{{3,3},{1,imgSize},{1,imgSize}}]:add(-103.939):clone()
+         img[{{3,3},{1,imgSize},{1,imgSize}}] = red
+         img[{{1,1},{1,imgSize},{1,imgSize}}] = blue
          if type == 'double' then img = img:double()
          elseif type == 'cuda' then img = img:cuda() end
-         local features = feature_net:forward(img)
+         features = feature_net:forward(img)
+         -- save features
+         torch.save(writeDirFC7..tostring(trainData[trainBiz[t]][i])..'.dat',features)
+         torch.save(writeDirCV7..tostring(trainData[trainBiz[t]][i])..'.dat',feature_net.modules[31].output)
+         torch.save(writeDirFC6..tostring(trainData[trainBiz[t]][i])..'.dat',feature_net.modules[34].output)
+         torch.save(writeDirCV14..tostring(trainData[trainBiz[t]][i])..'.dat',feature_net.modules[24].output)
          -- time taken
          time = sys.clock() - time
          print("\n==> time to extract 1 img = " .. (time*1000) .. 'ms')
-         torch.save(writeDirTrain..tostring(trainData[trainBiz[t]][i])..'.dat',features)
-         --inputs[{{i,i},{1,3},{1,imgSize},{1,imgSize}}] = img:clone()
       end
-
-      --[[ local vars
-      local time = sys.clock()
-
-      local features = feature_net:forward(inputs)
-
-      -- time taken
-      time = sys.clock() - time
-      print("\n==> time to extract 1 business = " .. (time*1000) .. 'ms')
-
-      torch.save(writeDirTrain..trainBiz[t]..'.dat',features)
-      ]]--
-
     end
 
-
-    for t = 1,numTest do
-      print('Iteration number: '..t)
-
-      -- create mini batch
-      local inputs = torch.Tensor(batchSize,3,imgSize,imgSize)
-      local numImgs = testData[testBiz[t]]:size(1)
-      for i = 1,numImgs do
-         -- load new sample
-         local time = sys.clock()
-         local img = crop_or_resize(photoDir..tostring(testData[testBiz[t]][i])..'.jpg')
-         img[{{1,1},{1,imgSize},{1,imgSize}}]:add(-123.68)
-         img[{{2,2},{1,imgSize},{1,imgSize}}]:add(-116.779)
-         img[{{3,3},{1,imgSize},{1,imgSize}}]:add(-103.939)
-         if type == 'double' then img = img:double()
-         elseif type == 'cuda' then img = img:cuda() end
-         local time = sys.clock()
-         local features = feature_net:forward(img)
-         -- time taken
-         time = sys.clock() - time
-         print("\n==> time to extract 1 img = " .. (time*1000) .. 'ms')
-         torch.save(writeDirTest..tostring(testData[testBiz[t]][i])..'.dat',features)
-         --inputs[{{i,i},{1,3},{1,imgSize},{1,imgSize}}] = img:clone()
-      end
-
-      --[[ local vars
-      local time = sys.clock()
-
-      local features = feature_net:forward(inputs)
-
-      -- time taken
-      time = sys.clock() - time
-      print("\n==> time to extract 1 business = " .. (time*1000) .. 'ms')
-
-      torch.save(writeDirTest..testBiz[t]..'.dat',features)
-      ]]--
-
-    end
 
